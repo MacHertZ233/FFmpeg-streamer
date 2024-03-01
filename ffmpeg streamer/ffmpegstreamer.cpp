@@ -1,0 +1,146 @@
+#include "ffmpegstreamer.h"
+
+
+
+FFmpegStreamer::FFmpegStreamer(QWidget* parent)
+	: QMainWindow(parent)
+{
+	ui.setupUi(this);
+
+	videoLabel = ui.label;
+
+	// video merger thread
+	QThread* mergeVideoThread = new QThread;
+	merger_video = new VideoMerger;
+	merger_video->moveToThread(mergeVideoThread);
+	mergeVideoThread->start();
+
+	// cam thread
+	QThread* camThread = new QThread;
+	VideoDecoder* camDecoder = new VideoDecoder;
+	camDecoder->moveToThread(camThread);
+	camThread->start();
+
+	// screen capturer thread
+	QThread* scrThread = new QThread;
+	VideoDecoder* scrDecoder = new VideoDecoder;
+	scrDecoder->moveToThread(scrThread);
+	scrThread->start();
+
+	// audio merger thread
+	QThread* mergeAudioThread = new QThread;
+	merger_audio = new AudioMerger;
+	merger_audio->moveToThread(mergeAudioThread);
+	mergeAudioThread->start();
+
+	// mic thread
+	QThread* micThread = new QThread;
+	AudioDecoder* micDecoder = new AudioDecoder;
+	micDecoder->moveToThread(micThread);
+	micThread->start();
+
+	// system sound thread
+	QThread* sysThread = new QThread;
+	AudioDecoder* sysDecoder = new AudioDecoder;
+	sysDecoder->moveToThread(sysThread);
+	sysThread->start();
+
+	connect(this, &FFmpegStreamer::sigDecodeVideoCam, camDecoder, &VideoDecoder::decode);
+	connect(this, &FFmpegStreamer::sigDecodeVideoScr, scrDecoder, &VideoDecoder::decode);
+	connect(this, &FFmpegStreamer::sigMergeVideoLoop, merger_video, &VideoMerger::slotMergeVideoLoop);
+
+	connect(camDecoder, &VideoDecoder::sigSendVideoFrame, this, &FFmpegStreamer::slotReceiveVideoFrame);
+	connect(scrDecoder, &VideoDecoder::sigSendVideoFrame, this, &FFmpegStreamer::slotReceiveVideoFrame);
+	
+	connect(merger_video, &VideoMerger::sigSendMergedVideoFrame, this, &FFmpegStreamer::slotReceiveMergedVideoFrame);
+
+
+	connect(this, &FFmpegStreamer::sigDecodeAudioMic, micDecoder, &AudioDecoder::decode);
+	connect(this, &FFmpegStreamer::sigDecodeAudioSys, sysDecoder, &AudioDecoder::decode);
+	connect(this, &FFmpegStreamer::sigMergeAudioLoop, merger_audio, &AudioMerger::slotMergeAudioLoop);
+
+	connect(micDecoder, &AudioDecoder::sigSendAudioFrame, this, &FFmpegStreamer::slotReceiveAudioFrame);
+	connect(sysDecoder, &AudioDecoder::sigSendAudioFrame, this, &FFmpegStreamer::slotReceiveAudioFrame);
+
+	connect(merger_audio, &AudioMerger::sigSendMergedAudioFrame, this, &FFmpegStreamer::slotReceiveMergedAudioFrame);
+
+
+	emit sigMergeVideoLoop();
+	emit sigDecodeVideoScr(MODE_VID_SCR);
+	emit sigDecodeVideoCam(MODE_VID_CAM);
+
+	emit sigMergeAudioLoop();
+	emit sigDecodeAudioMic(MODE_AUD_MIC);
+	emit sigDecodeAudioSys(MODE_AUD_SYS);
+
+	//f = fopen("O:\\_nginx_sample\\test.pcm", "wb");
+
+}
+
+FFmpegStreamer::~FFmpegStreamer()
+{
+	//fclose(f);
+}
+
+void FFmpegStreamer::slotReceiveVideoFrame(AVFrame* frame, mode_video mode)
+{
+	// process frame?
+	//if(mode == MODE_VID_CAM)...
+
+	// enqueue video frame
+	merger_video->mutex.lock();
+	if (mode == MODE_VID_CAM)
+		merger_video->queue_vid_cam.enqueue(frame);
+	else if (mode == MODE_VID_SCR)
+		merger_video->queue_vid_scr.enqueue(frame);
+	merger_video->mutex.unlock();
+}
+
+void FFmpegStreamer::slotReceiveMergedVideoFrame(AVFrame* frame)
+{
+	if (frame)
+	{
+		// video loopback
+		QImage img((uchar*)frame->data[0], frame->width, frame->height, QImage::Format_RGB888);
+		videoLabel->setFixedSize(img.size() / 3);
+		QPixmap map = QPixmap::fromImage(img);
+		videoLabel->setPixmap(map.scaled(videoLabel->size()));
+
+		av_frame_free(&frame);
+	}
+
+}
+
+void FFmpegStreamer::slotReceiveAudioFrame(AVFrame* frame, mode_audio mode)
+{
+	// enqueue audio frame
+	merger_audio->mutex.lock();
+	if (mode == MODE_AUD_MIC)
+		merger_audio->queue_aud_mic.enqueue(frame);
+	else if (mode == MODE_AUD_SYS)
+		merger_audio->queue_aud_sys.enqueue(frame);
+	merger_audio->mutex.unlock();
+}
+
+void FFmpegStreamer::slotReceiveMergedAudioFrame(AVFrame* frame)
+{
+	
+	if (frame)
+	{
+		// audio loopback?
+
+
+		/*qDebug() << "merged frame"
+			<< " format " << QString::number(frame->format)
+			<< " sample_rate " << QString::number(frame->sample_rate)
+			<< " nb_samples " << QString::number(frame->nb_samples)
+			<< " channels " << QString::number(frame->channels)
+			<< " duration " << QString::number(frame->duration);*/
+
+		/*int frameBytes = frame->nb_samples
+			* frame->channels
+			* av_get_bytes_per_sample((AVSampleFormat)frame->format);
+		fwrite(frame->data[0], 1, frameBytes, f);*/
+	}
+	
+}
