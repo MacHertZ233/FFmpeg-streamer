@@ -8,15 +8,15 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavdevice/avdevice.h>
+//#include <libavdevice/avdevice.h>
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersrc.h>
 #include <libavfilter/buffersink.h>
-#include <libavutil/avutil.h>
+//#include <libavutil/avutil.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 #include <libavutil/pixfmt.h>
-#include <libavutil/imgutils.h>
+//#include <libavutil/imgutils.h>
 }
 
 class VideoMerger : public QObject
@@ -31,7 +31,7 @@ public:
 
 private:
 	AVFilterGraph* filter_graph;
-	AVFilterContext* src_cam, * src_scr, * overlay, * sink;
+	AVFilterContext* src_cam, * src_scr, * overlay, * fps, * sink;
 
 signals:
 	void sigSendMergedVideoFrame(AVFrame* frame);

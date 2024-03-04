@@ -45,41 +45,53 @@ FFmpegStreamer::FFmpegStreamer(QWidget* parent)
 	sysDecoder->moveToThread(sysThread);
 	sysThread->start();
 
+	// video encoder thread
+	QThread* encVidThread = new QThread;
+	VideoEncoder* vidEncoder = new VideoEncoder;
+	vidEncoder->moveToThread(encVidThread);
+	encVidThread->start();
+
+	// audio encoder thread
+	QThread* encAudThread = new QThread;
+	AudioEncoder* audEncoder = new AudioEncoder;
+	audEncoder->moveToThread(encAudThread);
+	encAudThread->start();
+
 	connect(this, &FFmpegStreamer::sigDecodeVideoCam, camDecoder, &VideoDecoder::decode);
 	connect(this, &FFmpegStreamer::sigDecodeVideoScr, scrDecoder, &VideoDecoder::decode);
 	connect(this, &FFmpegStreamer::sigMergeVideoLoop, merger_video, &VideoMerger::slotMergeVideoLoop);
-
 	connect(camDecoder, &VideoDecoder::sigSendVideoFrame, this, &FFmpegStreamer::slotReceiveVideoFrame);
 	connect(scrDecoder, &VideoDecoder::sigSendVideoFrame, this, &FFmpegStreamer::slotReceiveVideoFrame);
-	
 	connect(merger_video, &VideoMerger::sigSendMergedVideoFrame, this, &FFmpegStreamer::slotReceiveMergedVideoFrame);
-
 
 	connect(this, &FFmpegStreamer::sigDecodeAudioMic, micDecoder, &AudioDecoder::decode);
 	connect(this, &FFmpegStreamer::sigDecodeAudioSys, sysDecoder, &AudioDecoder::decode);
 	connect(this, &FFmpegStreamer::sigMergeAudioLoop, merger_audio, &AudioMerger::slotMergeAudioLoop);
-
 	connect(micDecoder, &AudioDecoder::sigSendAudioFrame, this, &FFmpegStreamer::slotReceiveAudioFrame);
 	connect(sysDecoder, &AudioDecoder::sigSendAudioFrame, this, &FFmpegStreamer::slotReceiveAudioFrame);
-
 	connect(merger_audio, &AudioMerger::sigSendMergedAudioFrame, this, &FFmpegStreamer::slotReceiveMergedAudioFrame);
 
+	connect(this, &FFmpegStreamer::sigEncodeVideoFrame, vidEncoder, &VideoEncoder::slotEncodeVideoFrameToPacket);
+	connect(vidEncoder, &VideoEncoder::sigSendVideoPacket, this, &FFmpegStreamer::slotReceiveVideoPacket);
 
-	emit sigMergeVideoLoop();
-	emit sigDecodeVideoScr(MODE_VID_SCR);
-	emit sigDecodeVideoCam(MODE_VID_CAM);
+	connect(this, &FFmpegStreamer::sigEncodeAudioFrame, audEncoder, &AudioEncoder::slotEncodeAudioFrameToPacket);
+	connect(audEncoder, &AudioEncoder::sigSendAudioPacket, this, &FFmpegStreamer::slotReceiveAudioPacket);
+
+	//emit sigMergeVideoLoop();
+	//emit sigDecodeVideoScr(MODE_VID_SCR);
+	//emit sigDecodeVideoCam(MODE_VID_CAM);
 
 	emit sigMergeAudioLoop();
 	emit sigDecodeAudioMic(MODE_AUD_MIC);
 	emit sigDecodeAudioSys(MODE_AUD_SYS);
 
-	//f = fopen("O:\\_nginx_sample\\test.pcm", "wb");
+	f = fopen("O:\\_nginx_sample\\test.aac", "wb");
 
 }
 
 FFmpegStreamer::~FFmpegStreamer()
 {
-	//fclose(f);
+	fclose(f);
 }
 
 void FFmpegStreamer::slotReceiveVideoFrame(AVFrame* frame, mode_video mode)
@@ -106,9 +118,16 @@ void FFmpegStreamer::slotReceiveMergedVideoFrame(AVFrame* frame)
 		QPixmap map = QPixmap::fromImage(img);
 		videoLabel->setPixmap(map.scaled(videoLabel->size()));
 
-		av_frame_free(&frame);
+		emit sigEncodeVideoFrame(frame);
 	}
 
+}
+
+void FFmpegStreamer::slotReceiveVideoPacket(AVPacket* packet)
+{
+	//fwrite(packet->data, 1, packet->size, f);
+
+	av_packet_free(&packet);
 }
 
 void FFmpegStreamer::slotReceiveAudioFrame(AVFrame* frame, mode_audio mode)
@@ -124,7 +143,7 @@ void FFmpegStreamer::slotReceiveAudioFrame(AVFrame* frame, mode_audio mode)
 
 void FFmpegStreamer::slotReceiveMergedAudioFrame(AVFrame* frame)
 {
-	
+
 	if (frame)
 	{
 		// audio loopback?
@@ -137,10 +156,20 @@ void FFmpegStreamer::slotReceiveMergedAudioFrame(AVFrame* frame)
 			<< " channels " << QString::number(frame->channels)
 			<< " duration " << QString::number(frame->duration);*/
 
-		/*int frameBytes = frame->nb_samples
-			* frame->channels
-			* av_get_bytes_per_sample((AVSampleFormat)frame->format);
-		fwrite(frame->data[0], 1, frameBytes, f);*/
+			/*int frameBytes = frame->nb_samples
+				* frame->channels
+				* av_get_bytes_per_sample((AVSampleFormat)frame->format);
+			fwrite(frame->data[0], 1, frameBytes, f);*/
+
+		emit sigEncodeAudioFrame(frame);
+
+		//av_frame_free(&frame);
 	}
-	
+}
+
+void FFmpegStreamer::slotReceiveAudioPacket(AVPacket* packet)
+{
+	fwrite(packet->data, 1, packet->size, f);
+
+	av_packet_free(&packet);
 }

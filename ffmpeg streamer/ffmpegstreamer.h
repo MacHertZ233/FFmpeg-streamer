@@ -11,6 +11,7 @@
 #include "ui_ffmpegstreamer.h"
 #include "decoder.h"
 #include "merger.h"
+#include "encoder.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -20,6 +21,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 #include <libavutil/pixfmt.h>
 #include <libavutil/imgutils.h>
+//#include <libavutil/log.h>
 }
 
 using namespace std;
@@ -48,10 +50,15 @@ signals:
     void sigMergeAudioLoop();
     void sigDecodeAudioMic(mode_audio mode);
     void sigDecodeAudioSys(mode_audio mode);
+    void sigEncodeVideoFrame(AVFrame* frame);
+    void sigEncodeAudioFrame(AVFrame* frame);
+
 
 private slots:
     void slotReceiveVideoFrame(AVFrame* frame, mode_video mode);
     void slotReceiveMergedVideoFrame(AVFrame* frame);
     void slotReceiveAudioFrame(AVFrame* frame, mode_audio mode);
     void slotReceiveMergedAudioFrame(AVFrame* frame);
+    void slotReceiveVideoPacket(AVPacket* packet);
+    void slotReceiveAudioPacket(AVPacket* packet);
 };

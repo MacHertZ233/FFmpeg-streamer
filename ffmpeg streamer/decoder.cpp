@@ -16,12 +16,15 @@ void VideoDecoder::decode(mode_video mode)
 	// get format context
 	format_ctx = avformat_alloc_context();
 	if (mode == MODE_VID_CAM)
+	{
 		ret = avformat_open_input(&format_ctx, "video=Integrated Camera", ifmt, NULL);
+	}
+		
 	else if (mode == MODE_VID_SCR)
 	{
-		AVDictionary* option = NULL;
-		av_dict_set(&option, "framerate", "60", 0);
-		ret = avformat_open_input(&format_ctx, "desktop", ifmt, &option);
+		//AVDictionary* option = NULL;
+		//av_dict_set(&option, "framerate", "60", 0);
+		ret = avformat_open_input(&format_ctx, "desktop", ifmt, NULL);
 	}
 	ret = avformat_find_stream_info(format_ctx, NULL);
 
@@ -105,9 +108,9 @@ void VideoDecoder::decode(mode_video mode)
 	}
 	//fclose(f);
 
-
-	av_free(frame_yuv);
-	av_free(frame_rgb);
+	av_freep(&frame_rgb->data[0]);
+	av_frame_free(&frame_yuv);
+	av_frame_free(&frame_rgb);
 	sws_freeContext(sws_ctx);
 	avcodec_close(codec_ctx_vid);
 	avformat_close_input(&format_ctx);
