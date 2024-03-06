@@ -19,6 +19,7 @@ public:
 private:
 	AVCodecContext* codec_ctx;
 	SwsContext* sws_ctx;
+	//AVPacket* packet;
 signals:
 	void sigSendVideoPacket(AVPacket* packet);
 public slots:
@@ -33,7 +34,10 @@ public:
 	~AudioEncoder();
 private:
 	AVCodecContext* codec_ctx;
-	//SwsContext* sws_ctx;
+	SwrContext* swr_ctx;
+	uint8_t*  remaining_buffer[2];
+	int remaining_size = 0;
+	//AVFormatContext* output;
 signals:
 	void sigSendAudioPacket(AVPacket* packet);
 public slots:

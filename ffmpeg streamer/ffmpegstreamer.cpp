@@ -77,21 +77,23 @@ FFmpegStreamer::FFmpegStreamer(QWidget* parent)
 	connect(this, &FFmpegStreamer::sigEncodeAudioFrame, audEncoder, &AudioEncoder::slotEncodeAudioFrameToPacket);
 	connect(audEncoder, &AudioEncoder::sigSendAudioPacket, this, &FFmpegStreamer::slotReceiveAudioPacket);
 
-	//emit sigMergeVideoLoop();
-	//emit sigDecodeVideoScr(MODE_VID_SCR);
-	//emit sigDecodeVideoCam(MODE_VID_CAM);
+	emit sigMergeVideoLoop();
+	emit sigDecodeVideoScr(MODE_VID_SCR);
+	emit sigDecodeVideoCam(MODE_VID_CAM);
 
-	emit sigMergeAudioLoop();
-	emit sigDecodeAudioMic(MODE_AUD_MIC);
-	emit sigDecodeAudioSys(MODE_AUD_SYS);
+	//emit sigMergeAudioLoop();
+	//emit sigDecodeAudioMic(MODE_AUD_MIC);
+	//emit sigDecodeAudioSys(MODE_AUD_SYS);
 
-	f = fopen("O:\\_nginx_sample\\test.aac", "wb");
+	//f = fopen("O:\\_nginx_sample\\test.aac", "wb");
+
+
 
 }
 
 FFmpegStreamer::~FFmpegStreamer()
 {
-	fclose(f);
+	//fclose(f);
 }
 
 void FFmpegStreamer::slotReceiveVideoFrame(AVFrame* frame, mode_video mode)
@@ -169,7 +171,7 @@ void FFmpegStreamer::slotReceiveMergedAudioFrame(AVFrame* frame)
 
 void FFmpegStreamer::slotReceiveAudioPacket(AVPacket* packet)
 {
-	fwrite(packet->data, 1, packet->size, f);
+
 
 	av_packet_free(&packet);
 }

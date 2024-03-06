@@ -52,7 +52,7 @@ public:
 
 private:
 	AVFilterGraph* filter_graph;
-	AVFilterContext* src_mic, * src_sys, * amerge, * pan, * sink;
+	AVFilterContext* src_mic, * src_sys, * amerge, * pan, * aformat, * sink;
 
 signals:
 	void sigSendMergedAudioFrame(AVFrame* frame);

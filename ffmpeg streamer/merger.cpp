@@ -98,14 +98,16 @@ AudioMerger::AudioMerger()
 		"inputs=2", NULL, filter_graph);
 	ret = avfilter_graph_create_filter(&pan, avfilter_get_by_name("pan"), "pan",
 		"stereo|c0=c0+c2|c1=c1+c3", NULL, filter_graph);
+	ret = avfilter_graph_create_filter(&aformat, avfilter_get_by_name("aformat"), "aformat",
+		"sample_fmts=fltp", NULL, filter_graph);
 	ret = avfilter_graph_create_filter(&sink, avfilter_get_by_name("abuffersink"), "sink",
 		NULL, NULL, filter_graph);
-
 
 	ret = avfilter_link(src_mic, 0, amerge, 0);
 	ret = avfilter_link(src_sys, 0, amerge, 1);
 	ret = avfilter_link(amerge, 0, pan, 0);
-	ret = avfilter_link(pan, 0, sink, 0);
+	ret = avfilter_link(pan, 0, aformat, 0);
+	ret = avfilter_link(aformat, 0, sink, 0);
 
 	//avfilter_link(src_cam, 0, sink, 0);
 
