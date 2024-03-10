@@ -49,6 +49,9 @@
     <ClCompile Include="encoder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="muxer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="decoder.h">
@@ -60,9 +63,15 @@
     <QtMoc Include="encoder.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="muxer.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="modes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rbf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

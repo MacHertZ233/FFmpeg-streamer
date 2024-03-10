@@ -5,6 +5,7 @@
 //#include <QAudioOutput>
 
 #include "modes.h"
+#include "rbf.hpp"
 
 extern "C" {
 #include <libavcodec/avcodec.h>

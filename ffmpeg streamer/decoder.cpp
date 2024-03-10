@@ -93,8 +93,22 @@ void VideoDecoder::decode(mode_video mode)
 					frame_rgb->format = AV_PIX_FMT_RGB24;
 					frame_rgb->width = frame_yuv->width;
 					frame_rgb->height = frame_yuv->height;
-					//avframergb->pts = avframe->pts;
-					//avframergb->pkt_dts = avframe->pkt_dts;
+
+					// filter, laggy!
+					/*if (mode == MODE_VID_CAM)
+					{
+						int width = 1280, height = 720, channel = 3;
+						uint8_t* old_data = (uint8_t*)malloc(sizeof(uint8_t) * width * height * channel);
+						memcpy(old_data, frame_rgb->data[0], sizeof(uint8_t) * width * height * channel);
+						float* buffer = new float[
+							(width * height * channel
+								+ width * height
+								+ width * channel
+								+ width) * 2];
+						recursive_bf(old_data, frame_rgb->data[0], 0.002, 0.01, 1280, 720, 3, buffer);
+						delete[] buffer;
+						free(old_data);
+					}*/
 
 					emit sigSendVideoFrame(frame_rgb, mode);
 

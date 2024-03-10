@@ -5,7 +5,7 @@ VideoEncoder::VideoEncoder()
 	int ret = -1;
 
 	// get encoder, alloc codec context
-	const AVCodec* encoder = avcodec_find_encoder(AV_CODEC_ID_HEVC);
+	const AVCodec* encoder = avcodec_find_encoder(AV_CODEC_ID_H264);
 	codec_ctx = avcodec_alloc_context3(encoder);
 
 	codec_ctx->bit_rate = 5000000;
@@ -13,10 +13,12 @@ VideoEncoder::VideoEncoder()
 	codec_ctx->height = 1080;
 	codec_ctx->framerate = { 30,1 };
 	codec_ctx->time_base = { 1,30 };
-	codec_ctx->gop_size = 30;
-	codec_ctx->max_b_frames = 3;
+	codec_ctx->gop_size = 15;
+	codec_ctx->max_b_frames = 0;
 	codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
 	codec_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
+	av_opt_set(codec_ctx->priv_data, "preset", "slow", 0);
+	av_opt_set(codec_ctx->priv_data, "tune", "zerolatency", 0);
 
 	ret = avcodec_open2(codec_ctx, encoder, NULL);
 
@@ -55,6 +57,7 @@ void VideoEncoder::slotEncodeVideoFrameToPacket(AVFrame* frame)
 		
 		while (!avcodec_receive_packet(codec_ctx, packet))
 		{
+			packet->stream_index = 0;
 			emit sigSendVideoPacket(av_packet_clone(packet));
 		}
 		
@@ -159,6 +162,7 @@ void AudioEncoder::slotEncodeAudioFrameToPacket(AVFrame* frame)
 			{
 				
 				//ret = av_write_frame(output, packet);
+				packet->stream_index = 1;
 				emit sigSendAudioPacket(av_packet_clone(packet));
 			}
 		}

@@ -15,13 +15,13 @@ FFmpegStreamer::FFmpegStreamer(QWidget* parent)
 	merger_video->moveToThread(mergeVideoThread);
 	mergeVideoThread->start();
 
-	// cam thread
+	// cam decoder thread
 	QThread* camThread = new QThread;
 	VideoDecoder* camDecoder = new VideoDecoder;
 	camDecoder->moveToThread(camThread);
 	camThread->start();
 
-	// screen capturer thread
+	// screen capture decoder thread
 	QThread* scrThread = new QThread;
 	VideoDecoder* scrDecoder = new VideoDecoder;
 	scrDecoder->moveToThread(scrThread);
@@ -33,13 +33,13 @@ FFmpegStreamer::FFmpegStreamer(QWidget* parent)
 	merger_audio->moveToThread(mergeAudioThread);
 	mergeAudioThread->start();
 
-	// mic thread
+	// mic decoder thread
 	QThread* micThread = new QThread;
 	AudioDecoder* micDecoder = new AudioDecoder;
 	micDecoder->moveToThread(micThread);
 	micThread->start();
 
-	// system sound thread
+	// system sound decoder thread
 	QThread* sysThread = new QThread;
 	AudioDecoder* sysDecoder = new AudioDecoder;
 	sysDecoder->moveToThread(sysThread);
@@ -56,6 +56,15 @@ FFmpegStreamer::FFmpegStreamer(QWidget* parent)
 	AudioEncoder* audEncoder = new AudioEncoder;
 	audEncoder->moveToThread(encAudThread);
 	encAudThread->start();
+
+	// muxer & streamer thread
+	QThread* muxThread = new QThread;
+	Muxer* muxer = new Muxer(
+		vidEncoder->getCodecContext(),
+		audEncoder->getCodecContext()
+	);
+	muxer->moveToThread(muxThread);
+	muxThread->start();
 
 	connect(this, &FFmpegStreamer::sigDecodeVideoCam, camDecoder, &VideoDecoder::decode);
 	connect(this, &FFmpegStreamer::sigDecodeVideoScr, scrDecoder, &VideoDecoder::decode);
@@ -77,13 +86,15 @@ FFmpegStreamer::FFmpegStreamer(QWidget* parent)
 	connect(this, &FFmpegStreamer::sigEncodeAudioFrame, audEncoder, &AudioEncoder::slotEncodeAudioFrameToPacket);
 	connect(audEncoder, &AudioEncoder::sigSendAudioPacket, this, &FFmpegStreamer::slotReceiveAudioPacket);
 
+	connect(this, &FFmpegStreamer::sigOutputPacket, muxer, &Muxer::slotWritePacket);
+
 	emit sigMergeVideoLoop();
 	emit sigDecodeVideoScr(MODE_VID_SCR);
 	emit sigDecodeVideoCam(MODE_VID_CAM);
 
-	//emit sigMergeAudioLoop();
-	//emit sigDecodeAudioMic(MODE_AUD_MIC);
-	//emit sigDecodeAudioSys(MODE_AUD_SYS);
+	emit sigMergeAudioLoop();
+	emit sigDecodeAudioMic(MODE_AUD_MIC);
+	emit sigDecodeAudioSys(MODE_AUD_SYS);
 
 	//f = fopen("O:\\_nginx_sample\\test.aac", "wb");
 
@@ -98,9 +109,6 @@ FFmpegStreamer::~FFmpegStreamer()
 
 void FFmpegStreamer::slotReceiveVideoFrame(AVFrame* frame, mode_video mode)
 {
-	// process frame?
-	//if(mode == MODE_VID_CAM)...
-
 	// enqueue video frame
 	merger_video->mutex.lock();
 	if (mode == MODE_VID_CAM)
@@ -114,13 +122,17 @@ void FFmpegStreamer::slotReceiveMergedVideoFrame(AVFrame* frame)
 {
 	if (frame)
 	{
+		
+
 		// video loopback
 		QImage img((uchar*)frame->data[0], frame->width, frame->height, QImage::Format_RGB888);
-		videoLabel->setFixedSize(img.size() / 3);
+		videoLabel->setFixedSize(img.size()/2);
 		QPixmap map = QPixmap::fromImage(img);
 		videoLabel->setPixmap(map.scaled(videoLabel->size()));
 
 		emit sigEncodeVideoFrame(frame);
+
+		
 	}
 
 }
@@ -128,8 +140,8 @@ void FFmpegStreamer::slotReceiveMergedVideoFrame(AVFrame* frame)
 void FFmpegStreamer::slotReceiveVideoPacket(AVPacket* packet)
 {
 	//fwrite(packet->data, 1, packet->size, f);
-
-	av_packet_free(&packet);
+	emit sigOutputPacket(packet);
+	//av_packet_free(&packet);
 }
 
 void FFmpegStreamer::slotReceiveAudioFrame(AVFrame* frame, mode_audio mode)
@@ -171,7 +183,6 @@ void FFmpegStreamer::slotReceiveMergedAudioFrame(AVFrame* frame)
 
 void FFmpegStreamer::slotReceiveAudioPacket(AVPacket* packet)
 {
-
-
-	av_packet_free(&packet);
+	emit sigOutputPacket(packet);
+	//av_packet_free(&packet);
 }

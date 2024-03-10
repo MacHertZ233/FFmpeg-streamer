@@ -8,6 +8,7 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libavutil/pixfmt.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/opt.h>
 }
 
 class VideoEncoder : public QObject
@@ -16,6 +17,7 @@ class VideoEncoder : public QObject
 public:
 	VideoEncoder();
 	~VideoEncoder();
+	AVCodecContext* getCodecContext() { return codec_ctx; }
 private:
 	AVCodecContext* codec_ctx;
 	SwsContext* sws_ctx;
@@ -32,6 +34,7 @@ class AudioEncoder : public QObject
 public:
 	AudioEncoder();
 	~AudioEncoder();
+	AVCodecContext* getCodecContext() { return codec_ctx; }
 private:
 	AVCodecContext* codec_ctx;
 	SwrContext* swr_ctx;

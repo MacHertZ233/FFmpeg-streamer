@@ -12,6 +12,8 @@
 #include "decoder.h"
 #include "merger.h"
 #include "encoder.h"
+#include "muxer.h"
+#include "rbf.hpp"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -52,7 +54,7 @@ signals:
     void sigDecodeAudioSys(mode_audio mode);
     void sigEncodeVideoFrame(AVFrame* frame);
     void sigEncodeAudioFrame(AVFrame* frame);
-
+    void sigOutputPacket(AVPacket* packet);
 
 private slots:
     void slotReceiveVideoFrame(AVFrame* frame, mode_video mode);
