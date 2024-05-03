@@ -21,43 +21,49 @@ extern "C" {
 
 class VideoMerger : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	VideoMerger();
-	QQueue<AVFrame*> queue_vid_cam;
-	QQueue<AVFrame*> queue_vid_scr;
-	QMutex mutex;
+    VideoMerger(int width, int height, int position);
+    ~VideoMerger();
+    void endMerge();
+    QQueue<AVFrame*> queue_vid_cam;
+    QQueue<AVFrame*> queue_vid_scr;
+    QMutex mutex;
 
 private:
-	AVFilterGraph* filter_graph;
-	AVFilterContext* src_cam, * src_scr, * overlay, * fps, * sink;
+    AVFilterGraph* filter_graph;
+    AVFilterContext* src_cam, * src_scr, * overlay, * fps, * sink;
+    int loop;
 
 signals:
-	void sigSendMergedVideoFrame(AVFrame* frame);
+    void sigSendMergedVideoFrame(AVFrame* frame);
 
 public slots:
-	void slotMergeVideoLoop();
+    void slotMergeVideoLoop();
 };
 
 class AudioMerger :public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	AudioMerger();
-	QQueue<AVFrame*> queue_aud_mic;
-	QQueue<AVFrame*> queue_aud_sys;
-	QMutex mutex;
+    AudioMerger(double weight);
+    ~AudioMerger();
+    void endMerge();
+    QQueue<AVFrame*> queue_aud_mic;
+    QQueue<AVFrame*> queue_aud_sys;
+    QMutex mutex;
 
 private:
-	AVFilterGraph* filter_graph;
-	AVFilterContext* src_mic, * src_sys, * amerge, * pan, * aformat, * sink;
-
+    AVFilterGraph* filter_graph;
+    AVFilterContext* src_mic, * src_sys, * amerge, * pan, * aformat, * sink;
+    int loop;
+    
 signals:
-	void sigSendMergedAudioFrame(AVFrame* frame);
+    void sigSendMergedAudioFrame(AVFrame* frame);
 
 public slots:
-	void slotMergeAudioLoop();
+    void slotMergeAudioLoop();
 };
 

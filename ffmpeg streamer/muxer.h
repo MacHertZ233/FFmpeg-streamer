@@ -11,19 +11,20 @@ extern "C" {
 }
 class Muxer:public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	Muxer(AVCodecContext* ctx_video, AVCodecContext* ctx_audio);
-	~Muxer();
+    Muxer(AVCodecContext* ctx_video, AVCodecContext* ctx_audio, const char* address);
+    ~Muxer();
 
 private:
-	AVFormatContext* output;
-	AVCodecContext* codec_context_video;
-	AVCodecContext* codec_context_audio;
-	uint64_t frame_index = 0;
-	int64_t start_time = -1;
+    AVFormatContext* output;
+    AVCodecContext* codec_context_video;
+    AVCodecContext* codec_context_audio;
+    uint64_t frame_index_video = 0;
+    uint64_t frame_index_audio = 0;
+    int64_t start_time = -1;
 
 public slots:
-	void slotWritePacket(AVPacket* packet);
+    void slotWritePacket(AVPacket* packet);
 };
 

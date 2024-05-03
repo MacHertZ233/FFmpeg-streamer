@@ -15,6 +15,12 @@
 #include "muxer.h"
 #include "rbf.hpp"
 
+#include <QLineEdit>
+#include <QComboBox>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
+#include <QPushButton>
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -37,13 +43,28 @@ public:
     ~FFmpegStreamer();
 
 private:
+    // UI及其组件管理
     Ui::ffmpegstreamerClass ui;
-    QLabel* videoLabel;
+    QLabel* label_video;
+    QLineEdit* line_edit_address;
+    QComboBox* combo_box_position;
+    QSpinBox* spin_box_width, * spin_box_height;
+    QDoubleSpinBox* spin_box_weight;
+    QPushButton* button_start;
+
+    // 线程管理
+    QThread* camThread, * scrThread, * mergeVideoThread,
+        * micThread, * sysThread, * mergeAudioThread,
+        * encVidThread, * encAudThread, * muxThread;
+    
+    // 对象管理
+    VideoDecoder* camDecoder, * scrDecoder;
+    AudioDecoder* micDecoder, * sysDecoder;
     VideoMerger* merger_video;
     AudioMerger* merger_audio;
-    //QAudioOutput* audio_output;
-
-    FILE* f;
+    VideoEncoder* vidEncoder;
+    AudioEncoder* audEncoder;
+    Muxer* muxer;
 
 signals:
     void sigMergeVideoLoop();
@@ -57,6 +78,8 @@ signals:
     void sigOutputPacket(AVPacket* packet);
 
 private slots:
+    void slotStartStreaming();
+    void slotStopStreaming();
     void slotReceiveVideoFrame(AVFrame* frame, mode_video mode);
     void slotReceiveMergedVideoFrame(AVFrame* frame);
     void slotReceiveAudioFrame(AVFrame* frame, mode_audio mode);
